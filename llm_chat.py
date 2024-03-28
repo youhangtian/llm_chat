@@ -1,7 +1,6 @@
-import torch
 import streamlit as st 
-from transformers import AutoTokenizer, AutoModelForCausalLM
-from transformers_stream_generator import init_stream_support
+from transformers import AutoTokenizer, AutoModelForCausalLM, TextIteratorStreamer
+from threading import Thread
 from utils import get_config_from_yaml
 
 st.title('Large Language Model Chat Demo')
@@ -17,7 +16,6 @@ if 'config' not in st.session_state:
     st.session_state['config'] = get_config_from_yaml('cfg.yaml')
 
 if 'model' not in st.session_state:
-    init_stream_support()
     config = st.session_state['config']
 
     st.session_state['model'] = AutoModelForCausalLM.from_pretrained(
@@ -34,7 +32,7 @@ if 'model' not in st.session_state:
 
 def response_generator(tokenizer, model, prompt):
     messages = [
-        {'role': 'system', 'content': 'You are a helpful assistant.'},
+        {'role': 'system', 'content': '你是一个智能问答助手，会用简短的语句回答用户的提问。'},
         {'role': 'user', 'content': prompt}
     ]
 
@@ -47,22 +45,30 @@ def response_generator(tokenizer, model, prompt):
     model_inputs = tokenizer(
         text,
         return_tensors='pt',
-        add_specal_tokens=False
-    ).input_ids.to(model.device)
-
-    generator = model.generate(
-        model_inputs,
-        do_stream=True,
-        do_sample=True,
-        max_new_tokens=20,
-        repetition_penalty=1.2,
-        early_stopping=True,
+        add_special_tokens=False
     )
 
-    for token in generator:
-        token = token.cpu().numpy().tolist()
-        word = tokenizer.decode(token, skip_special_tokens=True)
-        yield word 
+    streamer = TextIteratorStreamer(
+        tokenizer,
+        skip_prompt=True,
+        decode_kwargs=dict(
+            skip_special_tokens=True,
+        )
+    )
+
+    generation_kwargs = dict(
+        model_inputs,
+        streamer=streamer,
+        max_new_tokens=512,
+    )
+    thread = Thread(target=model.generate, kwargs=generation_kwargs)
+    thread.start()
+
+    for word in streamer:
+        if '<|im_end|>' in word:
+            yield word[:word.find('<|im_end|>')]
+        else:
+            yield word
 
 if prompt := st.chat_input('What is up?'):
     with st.chat_message('user'):
