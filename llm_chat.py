@@ -5,30 +5,23 @@ from utils import get_config_from_yaml
 
 st.title('Large Language Model Chat Demo')
 
-if 'messages' not in st.session_state:
-    st.session_state.messages = []
+@st.cache_resource
+def load_model():
+    config = get_config_from_yaml('cfg.yaml')
 
-for message in st.session_state.messages:
-    with st.chat_message(message['role']):
-        st.markdown(message['content'])
-
-if 'config' not in st.session_state:
-    st.session_state['config'] = get_config_from_yaml('cfg.yaml')
-
-if 'model' not in st.session_state:
-    config = st.session_state['config']
-
-    st.session_state['model'] = AutoModelForCausalLM.from_pretrained(
-        config.model_path,
-        device_map='auto',
-        trust_remote_code=True 
-    ).eval()
-
-    st.session_state['tokenizer'] = AutoTokenizer.from_pretrained(
+    tokenizer = AutoTokenizer.from_pretrained(
         config.model_path,
         device_map='auto',
         trust_remote_code=True
     )
+
+    model = AutoModelForCausalLM.from_pretrained(
+        config.model_path,
+        device_map='auto',
+        trust_remote_code=True
+    ).eval()
+
+    return tokenizer, model
 
 def response_generator(tokenizer, model, prompt):
     messages = [
@@ -46,7 +39,7 @@ def response_generator(tokenizer, model, prompt):
         text,
         return_tensors='pt',
         add_special_tokens=False
-    )
+    ).to(model.device)
 
     streamer = TextIteratorStreamer(
         tokenizer,
@@ -70,23 +63,32 @@ def response_generator(tokenizer, model, prompt):
         else:
             yield word
 
-if prompt := st.chat_input('What is up?'):
-    with st.chat_message('user'):
-        st.markdown(prompt)
+if __name__ == '__main__':
+    tokenizer, model = load_model()
 
-    st.session_state.messages.append({
-        'role': 'user',
-        'content': prompt
-    })
+    if 'messages' not in st.session_state:
+        st.session_state.messages = []
 
-    with st.chat_message('assistant'):
-        tokenizer = st.session_state['tokenizer']
-        model = st.session_state['model']
-        stream = response_generator(tokenizer, model, prompt)
-        response = st.write_stream(stream)
-        st.markdown(response)
+    for message in st.session_state.messages:
+        with st.chat_message(message['role']):
+            st.markdown(message['content'])
 
-    st.session_state.messages.append({
-        'role': 'assistant',
-        'content': response
-    })
+    if prompt := st.chat_input('What is up?'):
+        with st.chat_message('user'):
+            st.markdown(prompt)
+
+        st.session_state.messages.append({
+            'role': 'user',
+            'content': prompt
+        })
+
+        with st.chat_message('assistant'):
+            stream = response_generator(tokenizer, model, prompt)
+            response = st.write_stream(stream)
+            st.markdown(response)
+
+        st.session_state.messages.append({
+            'role': 'assistant',
+            'content': response
+        })
+    
