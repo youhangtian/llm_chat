@@ -1,22 +1,20 @@
 import streamlit as st 
 from transformers import AutoTokenizer, AutoModelForCausalLM, TextIteratorStreamer
 from threading import Thread
-from utils import get_config_from_yaml
 
 st.title('Large Language Model Chat Demo')
+MODEL_PATH = '/home/tian/models/Qwen1.5-1.8B-Chat'
 
 @st.cache_resource
 def load_model():
-    config = get_config_from_yaml('cfg.yaml')
-
     tokenizer = AutoTokenizer.from_pretrained(
-        config.model_path,
+        MODEL_PATH,
         device_map='auto',
         trust_remote_code=True
     )
 
     model = AutoModelForCausalLM.from_pretrained(
-        config.model_path,
+        MODEL_PATH,
         device_map='auto',
         trust_remote_code=True
     ).eval()
@@ -85,7 +83,7 @@ if __name__ == '__main__':
         with st.chat_message('assistant'):
             stream = response_generator(tokenizer, model, prompt)
             response = st.write_stream(stream)
-            st.markdown(response)
+            #st.markdown(response)
 
         st.session_state.messages.append({
             'role': 'assistant',
