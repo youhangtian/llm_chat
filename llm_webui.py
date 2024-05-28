@@ -1,9 +1,9 @@
 import streamlit as st 
 import requests
 import json
+import sys
 
-def response_generator(user_input):
-    api_url = f'http://0.0.0.0:8866/chat'
+def response_generator(user_input, api_url):
     request_data = {
         'input': user_input,
         'stream': True
@@ -17,6 +17,9 @@ def response_generator(user_input):
 
 if __name__ == '__main__':
     st.title('Large Language Model Chat Demo')
+
+    port = sys.argv[1]
+    api_url = f'http://0.0.0.0:{port}/chat'
 
     if 'messages' not in st.session_state:
         st.session_state.messages = []
@@ -35,7 +38,7 @@ if __name__ == '__main__':
         })
 
         with st.chat_message('assistant'):
-            stream = response_generator(user_input)
+            stream = response_generator(user_input, api_url)
             response = st.write_stream(stream)
             #st.markdown(response)
 

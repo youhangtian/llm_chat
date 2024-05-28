@@ -25,9 +25,10 @@ def create_app(model_path):
 async def chat(data: dict = Body({}, description='用户输入')):
     input = data.get('input', '')
     stream = data.get('stream', False)
+    temp = data.get('temp', 0.5)
 
     messages = [
-        {'role': 'system', 'content': '你是一个智能问答对话助手。'},
+        {'role': 'system', 'content': '你是一个智能对话助手。'},
         {'role': 'user', 'content': input}
     ]
 
@@ -59,6 +60,7 @@ async def chat(data: dict = Body({}, description='用户输入')):
                 model_inputs,
                 streamer=streamer,
                 max_new_tokens=512,
+                temperature=temp
             )
             thread = Thread(target=model.generate, kwargs=generation_kwargs)
             thread.start()
@@ -76,7 +78,7 @@ async def chat(data: dict = Body({}, description='用户输入')):
             model_inputs.input_ids,
             max_new_tokens=512,
             do_sample=True,
-            temperature=0.5
+            temperature=temp
         )
 
         generated_ids = generated_ids[0][len(model_inputs.input_ids[0]):]

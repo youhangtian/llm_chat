@@ -4,17 +4,18 @@ import subprocess
 from multiprocessing import Process
 from llm_api import create_app
 
-MODEL_PATH = '/home/tian/models/Qwen1.5-1.8B-Chat'
+#MODEL_PATH = '/file/models/Qwen1.5-110B-Chat'
+MODEL_PATH = '/home/tyh/git/LLaMA-Factory/my_ft_output/qwen-14b-yc'
 HOST = '0.0.0.0'
-LLM_PORT = 8866
-ST_PORT = 8867
+LLM_PORT = 8876
+ST_PORT = 8877
 
 def run_api_server():
     app = create_app(MODEL_PATH)
     uvicorn.run(app, host=HOST, port=LLM_PORT)
 
 def run_webui():
-    cmd = ['streamlit', 'run', 'llm_webui.py',
+    cmd = ['streamlit', 'run', 'llm_webui.py', f'{LLM_PORT}',
            '--server.address', HOST,
            '--server.port', f'{ST_PORT}']
     

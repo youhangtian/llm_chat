@@ -6,7 +6,7 @@ import torch
 torch.manual_seed(1234)
 
 st.title('Vision Language Model Chat Demo')
-MODEL_PATH = '/home/tian/models/Qwen-VL-Chat'
+MODEL_PATH = '/file/tian/models/Qwen-VL-Chat'
 
 @st.cache_resource
 def load_model():
