@@ -14,7 +14,11 @@ def response_generator(user_input):
     request_data = {
         'model': Model_name,
         'messages': messages,
-        'stream': True
+        'stream': True,
+        'options': {
+            'temperature': 0.7,
+            'num_predict': 2048
+        }
     }
 
     response = requests.post(Ollama_api_url, json=request_data, stream=True)
