@@ -3,7 +3,7 @@ import requests
 import json
 
 Ollama_api_url = 'http://localhost:11434/api/chat'
-Model_name = 'qwen2:1.5b'
+Model_name = 'qwen2:72b'
 
 def response_generator(user_input):
     messages = [
@@ -14,11 +14,7 @@ def response_generator(user_input):
     request_data = {
         'model': Model_name,
         'messages': messages,
-        'stream': True,
-        'options': {
-            'temperature': 0.7,
-            'num_predict': 2048
-        }
+        'stream': True
     }
 
     response = requests.post(Ollama_api_url, json=request_data, stream=True)
