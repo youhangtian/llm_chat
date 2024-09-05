@@ -12,8 +12,8 @@ def response_generator(user_input, api_url):
     response = requests.post(api_url, json=request_data, stream=True)
 
     for data in response.iter_content(None, decode_unicode=True):
-        word = json.loads(data)
-        yield word.get('word', '')
+        json_data = json.loads(data)
+        yield json_data.get('word', '')
 
 if __name__ == '__main__':
     st.title('Large Language Model Chat Demo')
@@ -40,7 +40,6 @@ if __name__ == '__main__':
         with st.chat_message('assistant'):
             stream = response_generator(user_input, api_url)
             response = st.write_stream(stream)
-            #st.markdown(response)
 
         st.session_state.messages.append({
             'role': 'assistant',

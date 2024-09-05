@@ -60,15 +60,15 @@ async def chat(data: dict = Body({}, description='用户输入')):
                 model_inputs,
                 streamer=streamer,
                 max_new_tokens=512,
-                temperature=temp
+                temperature=temp,
             )
             thread = Thread(target=model.generate, kwargs=generation_kwargs)
             thread.start()
 
             for word in streamer:
-                if '<|im_end|>' in word:
-                    word = word[:word.find('<|im_end|>')]
-                
+                eos_token = tokenizer.special_tokens_map['eos_token']
+                if eos_token in word:
+                    word = word[:word.find(eos_token)]
                 ret = {'word': word}
                 yield json.dumps(ret, ensure_ascii=False)
 
@@ -86,4 +86,5 @@ async def chat(data: dict = Body({}, description='用户输入')):
         output = tokenizer.decode(generated_ids, skip_special_tokens=True)
 
         ret = {'output': output}
-        return json.dumps(ret, ensure_ascii=False)
+        #ret = json.dumps(ret, ensure_ascii=False)
+        return ret
