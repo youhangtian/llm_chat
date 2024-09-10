@@ -7,7 +7,7 @@ Model_name = 'qwen2:72b'
 
 def response_generator(user_input):
     messages = [
-        {'role': 'system', 'content': ''},
+        {'role': 'system', 'content': 'You are a helpful assistant.'},
         {'role': 'user', 'content': user_input}
     ]
 

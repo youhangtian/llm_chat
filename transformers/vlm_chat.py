@@ -1,66 +1,26 @@
-import streamlit as st 
-from transformers import AutoTokenizer, AutoModelForCausalLM, TextIteratorStreamer
-from transformers.generation import GenerationConfig 
-
+import cv2 
 import torch
-torch.manual_seed(1234)
+import streamlit as st 
+from transformers import AutoProcessor, LlavaForConditionalGeneration
 
-st.title('Vision Language Model Chat Demo')
-MODEL_PATH = '/file/tian/models/Qwen-VL-Chat'
+st.title('Llava Demo')
+MODEL_PATH = '/home/tyh/codes/llamafactory/sft_output/llava-7b-sft'
 
 @st.cache_resource
 def load_model():
-    tokenizer = AutoTokenizer.from_pretrained(
-        MODEL_PATH,
-        device_map='auto',
-        trust_remote_code=True,
-        resume_download=True,
-        revision='master'
-    )
+    processor = AutoProcessor.from_pretrained(MODEL_PATH)
 
-    model = AutoModelForCausalLM.from_pretrained(
+    model = LlavaForConditionalGeneration.from_pretrained(
         MODEL_PATH,
         device_map='auto',
-        trust_remote_code=True,
-        resume_download=True,
-        revision='master'
+        torch_dtype=torch.float16,
+        low_cpu_mem_usage=True,
     ).eval()
 
-    model.generation_config = GenerationConfig.from_pretrained(
-        MODEL_PATH,
-        trust_remote=True,
-        resume_download=True,
-        revision='master'
-    )
-
-    return tokenizer, model
-
-def response_generator(tokenizer, model, img, text, history=None):
-    if img:
-        query = tokenizer.from_list_format([
-            {'image': img},
-            {'text': text}
-        ])
-    else:
-        query = tokenizer.from_list_format([
-            {'text': text}
-        ])
-
-    generator = model.chat_stream(
-        tokenizer,
-        query=query,
-        history=history,
-        system='你是一个智能问答助手。'
-    )
-
-    cur_len = 0
-    for response in generator:
-        new_text = response[cur_len:]
-        cur_len = len(response)
-        yield new_text
+    return processor, model
 
 if __name__ == '__main__':
-    tokenizer, model = load_model()
+    processor, model = load_model()
 
     if 'messages' not in st.session_state:
         st.session_state.messages = []
@@ -76,36 +36,54 @@ if __name__ == '__main__':
         st.session_state.img = None 
 
     if prompt := st.chat_input('What is up?'):
-        img_suffix = ['jpg', 'jpeg', 'JPG', 'JPEG']
         is_img = False
+        img_suffix = ['.jpg', '.jpeg', '.png']
         with st.chat_message('user'):
-            if any([suffix in prompt for suffix in img_suffix]):
+            if 'http' in prompt:
                 try:
-                    st.image(prompt)
-                    is_img = True
-                    st.session_state.img = prompt 
-                except:
-                    st.markdown(prompt)
+                    cap = cv2.VideoCapture(prompt)
+                    _, img = cap.read(cv2.IMREAD_IGNORE_ORIENTATION)
+                    is_img = True 
+                except Exception as e:
+                    st.markdown(f'{prompt}\n{e}')
+            elif any([suffix in prompt.lower() for suffix in img_suffix]):
+                try:
+                    img = cv2.imread(prompt)
+                    is_img = True 
+                except Exception as e:
+                    st.markdown(f'{prompt}\n{e}')
+            
+            if is_img:
+                img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+                st.image(img)
+
+                st.session_state.img = img 
+                st.session_state.messages.append({
+                    'role': 'user',
+                    'is_img': is_img,
+                    'content': img
+                })
             else:
                 st.markdown(prompt)
 
-        st.session_state.messages.append({
-            'role': 'user',
-            'is_img': is_img,
-            'content': prompt
-        })
+                st.session_state.messages.append({
+                    'role': 'user',
+                    'is_img': is_img,
+                    'content': prompt
+                })
 
         with st.chat_message('assistant'):
             if is_img:
-                stream = response_generator(tokenizer, model, st.session_state.img, '描述这张图片')
+                response = '请根据图片提问'
             else:
-                stream = response_generator(tokenizer, model, st.session_state.img, prompt)
-            response = st.write_stream(stream)
-            #st.markdown(response)
+                input_prompt = f'USER: <image>\n{prompt}\nASSISTANT:'
+                inputs = processor(input_prompt, st.session_state.img, return_tensors='pt').to(model.device, torch.float16)
+                outputs = model.generate(**inputs, max_new_tokens=512, do_sample=False)
+                response = processor.decode(outputs[0][inputs['input_ids'].shape[-1]:], skip_special_tokens=True)
+            st.markdown(response)
 
         st.session_state.messages.append({
             'role': 'assistant',
             'is_img': False,
             'content': response
         })
-    

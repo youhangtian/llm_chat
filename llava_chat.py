@@ -1,14 +1,14 @@
-import streamlit as st 
 import requests
 import json
 import cv2
 import base64
+import streamlit as st 
 
 Ollama_api_url = 'http://localhost:11434/api/generate'
 Model_name = 'llava:34b'
 
 def response_generator(img_base64, text):
-    if img_base64:
+    if img_base64 is not None:
         request_data = {
             'model': Model_name,
             'prompt': text,
@@ -48,7 +48,7 @@ if __name__ == '__main__':
         is_img = False
         img_suffix = ['.jpg', '.jpeg', '.png']
         with st.chat_message('user'):
-            if 'https' in prompt:
+            if 'http' in prompt:
                 try:
                     cap = cv2.VideoCapture(prompt)
                     _, img = cap.read(cv2.IMREAD_IGNORE_ORIENTATION)
@@ -66,9 +66,7 @@ if __name__ == '__main__':
                 img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
                 st.image(img)
 
-                img_format = f'.{prompt.split('.')[-1]}'.lower()
-                if img_format not in img_suffix: img_format = '.jpg'
-                img_bytes = cv2.imencode(img_format, img)[1].tobytes()
+                img_bytes = cv2.imencode('.jpg', img)[1].tobytes()
                 img_base64 = base64.b64encode(img_bytes)
                 st.session_state.img_base64 = img_base64
 
