@@ -1,4 +1,6 @@
-vllm serve /file/models/Qwen2.5-32B-Instruct \
- --tensor-parallel-size 8 \
- --max-model-len 10000 \
- --port 8800
+export CUDA_VISIBLE_DEVICES=4,5
+vllm serve /file/tian/models/llava1.5-7b-hf \
+ --chat_template chat_template.jinja \
+ --tensor-parallel-size 2 \
+ --max-model-len 1000 \
+ --port 8801

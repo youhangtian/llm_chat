@@ -3,7 +3,7 @@ import requests
 import json
 
 Vllm_api_url = 'http://localhost:8800/v1/chat/completions'
-Model_name = '/file/models/Qwen2.5-32B-Instruct'
+Model_name = '/models/Qwen2.5-32B-Instruct'
 
 def response_generator(user_input):
     messages = [
@@ -23,7 +23,7 @@ def response_generator(user_input):
         if len(data) > 6 and not data[6:12] == '[DONE]':
             choices = json.loads(data[6:])['choices']
             if choices:
-                word = word = choices[0]['delta']['content']
+                word = choices[0]['delta']['content']
                 yield word
 
 if __name__ == '__main__':
