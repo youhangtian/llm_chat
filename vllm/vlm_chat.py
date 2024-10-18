@@ -4,8 +4,8 @@ import cv2
 import base64
 import streamlit as st 
 
-Vllm_api_url = 'http://localhost:8801/v1/chat/completions'
-Model_name = '/file/tian/models/llava1.5-7b-hf'
+VLLM_API_URL = 'http://localhost:8801/v1/chat/completions'
+MODEL_NAME = '/file/tian/models/llava-v1.6-vicuna-7b-hf'
 
 def response_generator(img_base64, text):
     if img_base64 is not None:
@@ -25,22 +25,21 @@ def response_generator(img_base64, text):
         }]
 
     request_data = {
-        'model': Model_name,
+        'model': MODEL_NAME,
         'messages': messages,
         'stream': True
     }
 
-    response = requests.post(Vllm_api_url, json=request_data, stream=True)
+    response = requests.post(VLLM_API_URL, json=request_data, stream=True)
 
     for data in response.iter_content(None, decode_unicode=True):
-        if len(data) > 6 and not data[6:12] == '[DONE]':
-            choices = json.loads(data[6:])['choices']
-            if choices:
-                word = choices[0]['delta']['content']
-                yield word
+        if data.startswith('data: '): data = data[6:]
+        if data and not data.startswith('[DONE]'):
+            word = json.loads(data)['choices'][0]['delta']['content']
+            yield word
 
 if __name__ == '__main__':
-    st.title(f'LLM({Model_name}) Chat Demo')
+    st.title(f'LLM({MODEL_NAME}) Chat Demo')
 
     if 'messages' not in st.session_state:
         st.session_state.messages = []

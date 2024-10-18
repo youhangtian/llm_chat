@@ -1,9 +1,9 @@
-import streamlit as st 
 import requests
 import json
+import streamlit as st 
 
-Vllm_api_url = 'http://localhost:8800/v1/chat/completions'
-Model_name = '/models/Qwen2.5-32B-Instruct'
+VLLM_API_URL = 'http://localhost:8800/v1/chat/completions'
+MODEL_NAME = '/models/Qwen2.5-32B-Instruct'
 
 def response_generator(user_input):
     messages = [
@@ -12,22 +12,21 @@ def response_generator(user_input):
     ]
 
     request_data = {
-        'model': Model_name,
+        'model': MODEL_NAME,
         'messages': messages,
         'stream': True
     }
 
-    response = requests.post(Vllm_api_url, json=request_data, stream=True)
+    response = requests.post(VLLM_API_URL, json=request_data, stream=True)
 
     for data in response.iter_content(None, decode_unicode=True):
-        if len(data) > 6 and not data[6:12] == '[DONE]':
-            choices = json.loads(data[6:])['choices']
-            if choices:
-                word = choices[0]['delta']['content']
-                yield word
+        if data.startswith('data: '): data = data[6:]
+        if data and not data.startswith('[DONE]'):
+            word = json.loads(data)['choices'][0]['delta']['content']
+            yield word
 
 if __name__ == '__main__':
-    st.title(f'LLM({Model_name}) Chat Demo')
+    st.title(f'LLM({MODEL_NAME}) Chat Demo')
 
     if 'messages' not in st.session_state:
         st.session_state.messages = []
