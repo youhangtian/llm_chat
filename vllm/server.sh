@@ -1,6 +1,5 @@
-export CUDA_VISIBLE_DEVICES=4,5
-vllm serve /file/tian/models/llava-v1.6-vicuna-7b-hf \
-  --chat_template chat_template.jinja \
-  --tensor-parallel-size 2 \
+export CUDA_VISIBLE_DEVICES=2
+vllm serve /file/tian/models/Qwen2-VL-7B-Instruct \
+  --tensor-parallel-size 1 \
   --max-model-len 4096 \
   --port 8801

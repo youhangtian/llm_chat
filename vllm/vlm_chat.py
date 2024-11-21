@@ -5,7 +5,7 @@ import base64
 import streamlit as st 
 
 VLLM_API_URL = 'http://localhost:8801/v1/chat/completions'
-MODEL_NAME = '/file/tian/models/llava-v1.6-vicuna-7b-hf'
+MODEL_NAME = '/file/tian/models/Qwen2-VL-7B-Instruct'
 
 def response_generator(img_base64, text):
     if img_base64 is not None:

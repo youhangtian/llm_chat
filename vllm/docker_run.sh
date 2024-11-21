@@ -1,9 +1,10 @@
-docker run --name qwen32b_server \
-  --gpus='"device=2,3"' \
+docker run --name qwen7b_server \
+  --gpus='"device=1"' \
   -v /file/models:/models \
-  -p 8800:8000 \
+  -ti \
+  -p 8807:8000 \
   --ipc host \
   vllm/vllm-openai:latest \
-  --model /models/Qwen2.5-32B-Instruct \
+  --model /models/Qwen2.5-7B-Instruct \
   --max-model-len 10000 \
-  --tensor-parallel-size 2
+  --tensor-parallel-size 1
